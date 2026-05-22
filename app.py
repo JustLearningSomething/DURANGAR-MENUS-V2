@@ -306,8 +306,8 @@ with t3:
         # S(i,j) = c(0,i) + c(0,j) − c(i,j)
         # ══════════════════════════════════════════════════════════════════════
         # Usamos costo promedio de flota para los ahorros base
-        COSTO_PROM_CAMION    = round((1387+675)/2)   # $1.031/km
-        COSTO_PROM_CAMIONETA = round((221+204+253)/3) # $226/km
+        COSTO_PROM_CAMION    = 767   # $/km real promedio flota Durangar (TSN320+WEQ)
+        COSTO_PROM_CAMIONETA = 218   # $/km real promedio flota Durangar (JTX761+SXD+SZO)
 
         def ckm_campo(campo):
             return COSTO_PROM_CAMIONETA if campo=='Base H&P' else COSTO_PROM_CAMION
@@ -419,7 +419,8 @@ with t3:
             v = flota_rest[idx] if idx<len(flota_rest) else flota_rest[-1]
             km    = DIST_BODEGA[campo]*2
             t     = T_VIAJE[campo]*2+T_DESC
-            costo = round(km*v['costo_km'])
+            ckm_ind = COSTO_PROM_CAMIONETA if campo=='Base H&P' else COSTO_PROM_CAMION
+            costo = round(km * ckm_ind)
             estado= ('✓ Factible 300 min' if t<=300
                      else f'⚠ Ventana {ventana} min' if t<=ventana
                      else '✗ Requiere salida especial (3:25 am)')
@@ -444,11 +445,10 @@ with t3:
         placas_flota  = set(v['placa'] for v in FLOTA)
         placas_faltantes = placas_flota - placas_usadas
 
-        # Costo situación actual (todos van solos con el vehículo más barato posible)
-        costo_actual = sum(
-            DIST_BODEGA[c]*2 * (COSTO_PROM_CAMIONETA if c=='Base H&P' else COSTO_PROM_CAMION)
-            for c in CAMPOS
-        )
+        # Situación actual: TODOS los campos usan camión ($767/km) — sin optimización
+        # Dato exacto del Excel ClarkeWright_VRP_Durangar.xlsx: $1,213,394/quincena
+        costo_actual = sum(DIST_BODEGA[c] * 2 * COSTO_PROM_CAMION for c in CAMPOS)
+        # = $1,213,394/quincena | Ahorro modelo VRP: $147,286/quincena | $3,534,864/año
 
         st.session_state['vrp_result'] = {
             'ahorros':df_ah,'vrp':df_vrp,
